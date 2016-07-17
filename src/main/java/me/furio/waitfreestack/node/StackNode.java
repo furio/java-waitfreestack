@@ -10,20 +10,24 @@ import java.util.concurrent.atomic.AtomicLong;
 public class StackNode<T> extends AbstractNode<T> {
     // Helpers
     private AtomicBoolean mark;
-    private long pushTid;  // Id of the thread that created the request
     private AtomicLong index;
     private AtomicLong counter; // Used for stack cleanup
 
-    public StackNode(T value, long tid) {
+    public StackNode(T value, int tid) {
         super();
         setValue(value);
-        this.pushTid = tid;
+        setTid(tid);
         this.counter = new AtomicLong(0);
     }
 
     @Override
     public boolean isSentinel() {
         return false;
+    }
+
+    @Override
+    public boolean getAndSetMark(boolean mark) {
+        return this.mark.getAndSet(mark);
     }
 }
 

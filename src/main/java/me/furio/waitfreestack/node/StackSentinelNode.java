@@ -13,4 +13,9 @@ public class StackSentinelNode<T> extends AbstractNode<T> {
     public boolean isSentinel() {
         return true;
     }
+
+    @Override
+    public boolean getAndSetMark(boolean mark) {
+        return false;
+    }
 }
