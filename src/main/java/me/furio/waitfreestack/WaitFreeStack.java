@@ -4,8 +4,8 @@ import me.furio.waitfreestack.node.AbstractNode;
 import me.furio.waitfreestack.node.StackNode;
 import me.furio.waitfreestack.node.StackSentinelNode;
 import me.furio.waitfreestack.operations.PushOperation;
+import org.javatuples.Pair;
 
-import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -14,8 +14,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * Created by furione on 17/07/16.
  */
 public class WaitFreeStack<T> {
+    // This is a linked list
     private AbstractNode<T> listOfNodes;
     private AtomicReference<AbstractNode<T>> stackTop;
+    // ---------------------
 
     private AtomicReferenceArray<PushOperation<T>> announce;
     private AtomicLong globalPhase;
@@ -53,15 +55,37 @@ public class WaitFreeStack<T> {
         }
         attachNode(request);
 
-        // TODO: Define equality
-        if (!minValidRequest.equals(request)) {
+        // Need to check in the paper if we're talking of reference equals or object equals
+        if (minValidRequest != request) {
             attachNode(request);
         }
     }
 
     private void attachNode(PushOperation<T> request) {
         while (!request.isPushed()) {
+            AbstractNode<T> last = this.stackTop.get();
+            Pair<AbstractNode<T>,Boolean> nodeWithStatus = last.getNextNodeWithMark();
+            // Need to check in the paper if we're talking of reference equals or object equals
+            if (last == this.stackTop.get()) {
+                if ((nodeWithStatus.getValue0() == null) && !nodeWithStatus.getValue1()) {
+                    if (!request.isPushed()) {
+                        AbstractNode<T> myNode = request.getNode();
+                        boolean result = last.putNextNode(myNode);
+                        if (result) {
+                            updateTop();
 
+                            last.putEndNode(myNode);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            updateTop();
         }
+    }
+
+    private void updateTop() {
+        throw new RuntimeException();
     }
 }

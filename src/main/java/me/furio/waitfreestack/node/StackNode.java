@@ -15,6 +15,7 @@ public class StackNode<T> extends AbstractNode<T> {
     private AtomicLong counter; // Used for stack cleanup
 
     public StackNode(T value, long tid) {
+        super();
         setValue(value);
         this.pushTid = tid;
         this.counter = new AtomicLong(0);

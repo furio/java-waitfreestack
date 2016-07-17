@@ -5,6 +5,7 @@ package me.furio.waitfreestack.node;
  */
 public class StackSentinelNode<T> extends AbstractNode<T> {
     public StackSentinelNode() {
+        super();
         setValue(null);
     }
 
