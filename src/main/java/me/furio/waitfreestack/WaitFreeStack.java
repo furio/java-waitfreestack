@@ -200,6 +200,31 @@ public class WaitFreeStack<T> {
     }
 
     private void helpFinishDelete() {
-        throw new RuntimeException();
+        DeleteOperation<T> currReq = this.uniqueRequest.get();
+        if (currReq == null || !currReq.isPending()) {
+            return;
+        }
+
+        long endIdx = currReq.getNode().getIndex() + W - 1;
+        AbstractNode<T> rightNode = this.stackTop.get();
+        AbstractNode<T> leftNode = rightNode.getPrevNode();
+
+        while ((leftNode.getIndex() != endIdx) && !leftNode.isSentinel()) {
+            rightNode = leftNode;
+            leftNode = leftNode.getPrevNode();
+        }
+
+        if (leftNode.isSentinel()) {
+            return;
+        }
+
+        AbstractNode<T> target = leftNode;
+        for (long i = 0; i < W; i++) {
+            target = target.getPrevNode();
+        }
+
+        rightNode.setPrevNode(leftNode, target);
+
+        currReq.setPending(false);
     }
 }

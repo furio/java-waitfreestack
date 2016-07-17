@@ -66,7 +66,11 @@ public abstract class AbstractNode<T> {
         return this.prevNode.get();
     }
     public boolean setPrevNode(AbstractNode<T> prevNode) {
-        return this.prevNode.compareAndSet(null, prevNode);
+        return this.setPrevNode(null, prevNode);
+    }
+
+    public boolean setPrevNode(AbstractNode<T> expectedNode, AbstractNode<T> prevNode) {
+        return this.prevNode.compareAndSet(expectedNode, prevNode);
     }
 
     public abstract boolean isSentinel();
