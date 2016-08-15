@@ -20,28 +20,30 @@ public class WaitFreeStack<T> {
     private AbstractNode<T> listOfNodes;
     private AtomicReference<AbstractNode<T>> stackTop;
     // ---------------------
-    private static long W = 11111111; // Randomly set
+    private static long W = 123; // Randomly set
     private AtomicReferenceArray<PushOperation<T>> announce;
     private AtomicReferenceArray<DeleteOperation<T>> allDeleteRequests;
     private AtomicLong globalPhase;
     private AtomicLong deletePhase;
     private AtomicReference<DeleteOperation<T>> uniqueRequest;
+    private int maximuConcurrency;
 
-    public WaitFreeStack() {
+    public WaitFreeStack(int maximumConcurrency) {
         this.listOfNodes = new StackSentinelNode<T>();
         this.stackTop.set(this.listOfNodes);
 
+        this.maximuConcurrency = maximumConcurrency;
         this.globalPhase = new AtomicLong(0);
         this.deletePhase = new AtomicLong(0);
-        this.announce = new AtomicReferenceArray<PushOperation<T>>(Integer.MAX_VALUE);
-        this.allDeleteRequests = new AtomicReferenceArray<DeleteOperation<T>>(Integer.MAX_VALUE);
+        this.announce = new AtomicReferenceArray<PushOperation<T>>(maximumConcurrency);
+        this.allDeleteRequests = new AtomicReferenceArray<DeleteOperation<T>>(maximumConcurrency);
         this.uniqueRequest = new AtomicReference<DeleteOperation<T>>(null);
     }
 
     public void push(T value, int tid) {
         long phase = globalPhase.getAndIncrement();
         PushOperation<T> request = new PushOperation<T>(phase, false, new StackNode<T>(value, tid));
-        announce.set(tid, request);
+        announce.set(tid % this.maximuConcurrency, request);
         help(request);
     }
 
@@ -117,7 +119,7 @@ public class WaitFreeStack<T> {
         AbstractNode<T> last = this.stackTop.get();
         Pair<AbstractNode<T>, Boolean> nodeWithStatus = last.getNextNodeWithMark();
         if (nodeWithStatus.getValue0() != null) {
-            PushOperation<T> request = this.announce.get(nodeWithStatus.getValue0().getTid());
+            PushOperation<T> request = this.announce.get(nodeWithStatus.getValue0().getTid() % this.maximuConcurrency);
             if ((last == this.stackTop.get()) && (request.getNode() == nodeWithStatus.getValue0())) {
                 nodeWithStatus.getValue0().setPrevNode(last);
                 nodeWithStatus.getValue0().increaseIndex();
@@ -135,7 +137,8 @@ public class WaitFreeStack<T> {
         while (!temp.isSentinel()) {
             if (temp.getIndex() % W == 0) {
                 if (temp.increaseIndex() == (W+1)) {
-                    clean((int)Thread.currentThread().getId(), temp);
+                    // Is this really getId() ???
+                    clean((int)Thread.currentThread().getId() % this.maximuConcurrency, temp);
                 }
 
                 break;
@@ -149,7 +152,7 @@ public class WaitFreeStack<T> {
         long phase = this.deletePhase.getAndIncrement();
         DeleteOperation<T> request = new DeleteOperation<T>(phase, true, node, tid);
 
-        this.allDeleteRequests.set(tid, request);
+        this.allDeleteRequests.set(tid % this.maximuConcurrency, request);
         helpDelete(request);
     }
 
